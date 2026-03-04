@@ -131,8 +131,12 @@ public class CategoryChallengeListGUI implements Listener {
         lore.add(Component.text(challenge.getDescription(), NamedTextColor.GRAY)
                 .decoration(TextDecoration.ITALIC, false));
         lore.add(Component.empty());
-        lore.add(Component.text("Click to toggle", NamedTextColor.YELLOW)
+        lore.add(Component.text("Left-click to toggle", NamedTextColor.YELLOW)
                 .decoration(TextDecoration.ITALIC, false));
+        if (!challenge.getConfigurableSettings().isEmpty()) {
+            lore.add(Component.text("Right-click for settings", NamedTextColor.AQUA)
+                    .decoration(TextDecoration.ITALIC, false));
+        }
         meta.lore(lore);
 
         icon.setItemMeta(meta);
@@ -158,9 +162,14 @@ public class CategoryChallengeListGUI implements Listener {
             int index = page * CHALLENGE_SLOTS + slot;
             if (index < challenges.size()) {
                 Challenge challenge = challenges.get(index);
-                manager.toggleChallenge(challenge.getId());
-                boolean active = manager.isActive(challenge.getId());
-                inventory.setItem(slot, createIcon(challenge, active));
+                if (event.isRightClick() && !challenge.getConfigurableSettings().isEmpty()) {
+                    clicker.closeInventory();
+                    new ChallengeSettingsGUI(plugin, clicker, challenge).open();
+                } else {
+                    manager.toggleChallenge(challenge.getId());
+                    boolean active = manager.isActive(challenge.getId());
+                    inventory.setItem(slot, createIcon(challenge, active));
+                }
             }
             return;
         }

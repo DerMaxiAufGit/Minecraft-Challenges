@@ -3,6 +3,7 @@ package de.challenge.challenges.floor;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -13,6 +14,7 @@ import org.bukkit.event.player.PlayerToggleSneakEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -75,12 +77,19 @@ public class IceFloorChallenge extends Challenge {
         Material original = below.getType();
         below.setType(Material.PACKED_ICE);
 
-        int meltDelay = plugin.getConfig().getInt("ice-floor.melt-delay-ticks", 100);
+        int meltDelay = plugin.getSettingsManager().getInt("ice-floor.melt-delay-ticks", 100);
         Bukkit.getScheduler().runTaskLater(plugin, () -> {
             if (below.getType() == Material.PACKED_ICE) {
                 below.setType(original);
             }
         }, meltDelay);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("ice-floor.melt-delay-ticks", "Melt Delay (ticks)", 100, 20, 600, 20)
+        );
     }
 
     @Override

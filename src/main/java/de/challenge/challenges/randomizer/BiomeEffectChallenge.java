@@ -3,6 +3,7 @@ package de.challenge.challenges.randomizer;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import de.challenge.util.RandomizerMap;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -84,13 +85,13 @@ public class BiomeEffectChallenge extends Challenge {
             biomeEffectMap.generate(biomeNames, effectNames);
         }
 
-        int checkInterval = plugin.getConfig().getInt("biome-effect.check-interval-ticks", 40);
+        int checkInterval = plugin.getSettingsManager().getInt("biome-effect.check-interval-ticks", 40);
         checkTask = Bukkit.getScheduler().runTaskTimer(plugin, this::checkPlayers, 20L, checkInterval);
     }
 
     private void checkPlayers() {
-        int duration = plugin.getConfig().getInt("biome-effect.effect-duration-seconds", 10) * 20;
-        int amplifier = plugin.getConfig().getInt("biome-effect.amplifier", 0);
+        int duration = plugin.getSettingsManager().getInt("biome-effect.effect-duration-seconds", 10) * 20;
+        int amplifier = plugin.getSettingsManager().getInt("biome-effect.amplifier", 0);
 
         for (Player player : Bukkit.getOnlinePlayers()) {
             if (player.isDead()) continue;
@@ -110,6 +111,15 @@ public class BiomeEffectChallenge extends Challenge {
                 }
             }
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("biome-effect.check-interval-ticks", "Check Interval (ticks)", 40, 10, 200, 10),
+                ConfigurableSetting.ofInt("biome-effect.effect-duration-seconds", "Effect Duration (s)", 10, 3, 60, 5),
+                ConfigurableSetting.ofInt("biome-effect.amplifier", "Amplifier", 0, 0, 5, 1)
+        );
     }
 
     @Override

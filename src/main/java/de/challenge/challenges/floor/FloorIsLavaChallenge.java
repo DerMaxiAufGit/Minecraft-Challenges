@@ -3,6 +3,7 @@ package de.challenge.challenges.floor;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -13,6 +14,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 
 public class FloorIsLavaChallenge extends Challenge {
@@ -56,9 +58,9 @@ public class FloorIsLavaChallenge extends Challenge {
 
         convertedBlocks.add(below.getLocation());
 
-        int magmaDelay = plugin.getConfig().getInt("floor-is-lava.magma-delay-ticks", 30);
-        int lavaDelay = plugin.getConfig().getInt("floor-is-lava.lava-delay-ticks", 60);
-        boolean restore = plugin.getConfig().getBoolean("floor-is-lava.restore-blocks", true);
+        int magmaDelay = plugin.getSettingsManager().getInt("floor-is-lava.magma-delay-ticks", 30);
+        int lavaDelay = plugin.getSettingsManager().getInt("floor-is-lava.lava-delay-ticks", 60);
+        boolean restore = plugin.getSettingsManager().getBoolean("floor-is-lava.restore-blocks", true);
 
         Bukkit.getScheduler().runTaskLater(plugin, () -> below.setType(Material.MAGMA_BLOCK), magmaDelay);
         Bukkit.getScheduler().runTaskLater(plugin, () -> below.setType(Material.LAVA), lavaDelay);
@@ -69,6 +71,15 @@ public class FloorIsLavaChallenge extends Challenge {
                 convertedBlocks.remove(below.getLocation());
             }, lavaDelay * 2L);
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("floor-is-lava.magma-delay-ticks", "Magma Delay (ticks)", 30, 5, 200, 5),
+                ConfigurableSetting.ofInt("floor-is-lava.lava-delay-ticks", "Lava Delay (ticks)", 60, 10, 400, 10),
+                ConfigurableSetting.ofBoolean("floor-is-lava.restore-blocks", "Restore Blocks", true)
+        );
     }
 
     @Override

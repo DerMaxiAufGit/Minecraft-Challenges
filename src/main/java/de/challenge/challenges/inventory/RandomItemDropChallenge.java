@@ -3,6 +3,7 @@ package de.challenge.challenges.inventory;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -11,6 +12,7 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomItemDropChallenge extends Challenge {
@@ -38,7 +40,7 @@ public class RandomItemDropChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        int intervalTicks = plugin.getConfig().getInt("random-item-drop.interval-ticks", 600);
+        int intervalTicks = plugin.getSettingsManager().getInt("random-item-drop.interval-ticks", 600);
         task = Bukkit.getScheduler().runTaskTimer(plugin, this::dropRandomItem, intervalTicks, intervalTicks);
     }
 
@@ -62,6 +64,13 @@ public class RandomItemDropChallenge extends Challenge {
             player.getInventory().setItem(slotIndex, null);
             player.sendMessage(Component.text("An item fell out of your inventory!", NamedTextColor.RED));
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("random-item-drop.interval-ticks", "Interval (ticks)", 600, 100, 6000, 100)
+        );
     }
 
     @Override

@@ -3,6 +3,7 @@ package de.challenge.challenges.movement;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -14,6 +15,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.List;
 
 public class TrafficLightChallenge extends Challenge {
 
@@ -46,9 +49,9 @@ public class TrafficLightChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        greenTicks = plugin.getConfig().getInt("traffic-light.green-seconds", 20) * 20;
-        yellowTicks = plugin.getConfig().getInt("traffic-light.yellow-seconds", 5) * 20;
-        redTicks = plugin.getConfig().getInt("traffic-light.red-seconds", 10) * 20;
+        greenTicks = plugin.getSettingsManager().getInt("traffic-light.green-seconds", 20) * 20;
+        yellowTicks = plugin.getSettingsManager().getInt("traffic-light.yellow-seconds", 5) * 20;
+        redTicks = plugin.getSettingsManager().getInt("traffic-light.red-seconds", 10) * 20;
 
         currentPhase = Phase.GREEN;
         ticksInPhase = 0;
@@ -109,6 +112,15 @@ public class TrafficLightChallenge extends Challenge {
                 || event.getFrom().getBlockZ() != event.getTo().getBlockZ()) {
             event.getPlayer().damage(event.getPlayer().getHealth() + 1);
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("traffic-light.green-seconds", "Green Duration (s)", 20, 5, 120, 5),
+                ConfigurableSetting.ofInt("traffic-light.yellow-seconds", "Yellow Duration (s)", 5, 1, 30, 1),
+                ConfigurableSetting.ofInt("traffic-light.red-seconds", "Red Duration (s)", 10, 3, 60, 5)
+        );
     }
 
     @Override

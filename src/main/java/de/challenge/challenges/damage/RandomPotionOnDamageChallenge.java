@@ -3,6 +3,7 @@ package de.challenge.challenges.damage;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
@@ -64,14 +65,23 @@ public class RandomPotionOnDamageChallenge extends Challenge {
         if (!(event.getEntity() instanceof Player player)) return;
 
         ThreadLocalRandom random = ThreadLocalRandom.current();
-        int minDuration = plugin.getConfig().getInt("random-potion-on-damage.min-duration-seconds", 5) * 20;
-        int maxDuration = plugin.getConfig().getInt("random-potion-on-damage.max-duration-seconds", 30) * 20;
-        int maxAmp = plugin.getConfig().getInt("random-potion-on-damage.max-amplifier", 2);
+        int minDuration = plugin.getSettingsManager().getInt("random-potion-on-damage.min-duration-seconds", 5) * 20;
+        int maxDuration = plugin.getSettingsManager().getInt("random-potion-on-damage.max-duration-seconds", 30) * 20;
+        int maxAmp = plugin.getSettingsManager().getInt("random-potion-on-damage.max-amplifier", 2);
 
         PotionEffectType type = SAFE_EFFECTS.get(random.nextInt(SAFE_EFFECTS.size()));
         int duration = random.nextInt(minDuration, maxDuration + 1);
         int amplifier = random.nextInt(maxAmp + 1);
 
         player.addPotionEffect(new PotionEffect(type, duration, amplifier));
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("random-potion-on-damage.min-duration-seconds", "Min Duration (s)", 5, 1, 60, 1),
+                ConfigurableSetting.ofInt("random-potion-on-damage.max-duration-seconds", "Max Duration (s)", 30, 5, 120, 5),
+                ConfigurableSetting.ofInt("random-potion-on-damage.max-amplifier", "Max Amplifier", 2, 0, 5, 1)
+        );
     }
 }

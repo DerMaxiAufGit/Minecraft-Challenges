@@ -3,6 +3,7 @@ package de.challenge.challenges.environmental;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
 import org.bukkit.World;
@@ -11,6 +12,8 @@ import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerExpChangeEvent;
 import org.bukkit.event.player.PlayerLevelChangeEvent;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
 
 public class LevelBorderChallenge extends Challenge {
 
@@ -39,8 +42,8 @@ public class LevelBorderChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        multiplier = plugin.getConfig().getDouble("level-border.multiplier", 10.0);
-        minSize = plugin.getConfig().getDouble("level-border.min-size", 20.0);
+        multiplier = plugin.getSettingsManager().getDouble("level-border.multiplier", 10.0);
+        minSize = plugin.getSettingsManager().getDouble("level-border.min-size", 20.0);
 
         World overworld = Bukkit.getWorlds().get(0);
         originalSize = overworld.getWorldBorder().getSize();
@@ -64,6 +67,14 @@ public class LevelBorderChallenge extends Challenge {
         World overworld = Bukkit.getWorlds().get(0);
         WorldBorder border = overworld.getWorldBorder();
         border.setSize(newSize, 2L); // smooth 2-second transition
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofDouble("level-border.multiplier", "Level Multiplier", 10.0, 1.0, 100.0, 1.0),
+                ConfigurableSetting.ofDouble("level-border.min-size", "Min Size", 20.0, 5.0, 200.0, 5.0)
+        );
     }
 
     @Override

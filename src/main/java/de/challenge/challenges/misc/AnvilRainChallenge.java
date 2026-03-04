@@ -3,6 +3,7 @@ package de.challenge.challenges.misc;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -10,6 +11,8 @@ import org.bukkit.entity.FallingBlock;
 import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.List;
 
 public class AnvilRainChallenge extends Challenge {
 
@@ -36,8 +39,8 @@ public class AnvilRainChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        int interval = plugin.getConfig().getInt("anvil-rain.interval-ticks", 200);
-        int height = plugin.getConfig().getInt("anvil-rain.height", 20);
+        int interval = plugin.getSettingsManager().getInt("anvil-rain.interval-ticks", 200);
+        int height = plugin.getSettingsManager().getInt("anvil-rain.height", 20);
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -49,6 +52,14 @@ public class AnvilRainChallenge extends Challenge {
                 anvil.setHurtEntities(true);
             }
         }, interval, interval);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("anvil-rain.interval-ticks", "Interval (ticks)", 200, 20, 1200, 20),
+                ConfigurableSetting.ofInt("anvil-rain.height", "Drop Height", 20, 5, 80, 5)
+        );
     }
 
     @Override

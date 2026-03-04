@@ -3,6 +3,7 @@ package de.challenge.challenges.misc;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -92,11 +93,19 @@ public class ChunkMobChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        mobGlow = plugin.getConfig().getBoolean("chunk-mob.mob-glow", true);
-        gracePeriodTicks = plugin.getConfig().getLong("chunk-mob.grace-period-ticks", 60L);
+        mobGlow = plugin.getSettingsManager().getBoolean("chunk-mob.mob-glow", true);
+        gracePeriodTicks = plugin.getSettingsManager().getLong("chunk-mob.grace-period-ticks", 60L);
 
         validityCheckTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupInvalidChunks,
                 VALIDITY_CHECK_INTERVAL, VALIDITY_CHECK_INTERVAL);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofBoolean("chunk-mob.mob-glow", "Mob Glow", true),
+                ConfigurableSetting.ofLong("chunk-mob.grace-period-ticks", "Grace Period (ticks)", 60L, 0L, 200L, 10L)
+        );
     }
 
     @Override

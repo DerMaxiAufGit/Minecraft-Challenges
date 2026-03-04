@@ -110,7 +110,7 @@ public class ChallengeManager implements Listener {
     @EventHandler
     public void onPlayerDeath(PlayerDeathEvent event) {
         if (!challengeRunning || challengeEnded) return;
-        if (!plugin.getConfig().getBoolean("death-ends-challenge", true)) return;
+        if (!plugin.getSettingsManager().getBoolean("death-ends-challenge", true)) return;
 
         // Check if any active challenge overrides death (like AllDeathMessages project)
         for (String id : activeChallengeIds) {

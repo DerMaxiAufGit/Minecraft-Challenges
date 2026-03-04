@@ -3,12 +3,15 @@ package de.challenge.challenges.damage;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerAdvancementDoneEvent;
 import org.bukkit.inventory.ItemStack;
+
+import java.util.List;
 
 public class AchievementDamageChallenge extends Challenge {
 
@@ -37,9 +40,16 @@ public class AchievementDamageChallenge extends Challenge {
         // Filter out recipe advancements
         if (event.getAdvancement().getKey().getKey().startsWith("recipes/")) return;
 
-        double damage = plugin.getConfig().getDouble("achievement-damage.damage-amount", 1.0);
+        double damage = plugin.getSettingsManager().getDouble("achievement-damage.damage-amount", 1.0);
         event.getPlayer().damage(damage);
         event.getPlayer().sendMessage(
                 Component.text("Advancement unlocked! -" + (damage / 2) + " hearts", NamedTextColor.RED));
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofDouble("achievement-damage.damage-amount", "Damage Amount", 1.0, 0.5, 20.0, 0.5)
+        );
     }
 }

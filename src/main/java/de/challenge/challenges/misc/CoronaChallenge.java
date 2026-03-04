@@ -3,6 +3,7 @@ package de.challenge.challenges.misc;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -14,6 +15,8 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 import org.bukkit.scheduler.BukkitTask;
+
+import java.util.List;
 
 public class CoronaChallenge extends Challenge {
 
@@ -40,8 +43,8 @@ public class CoronaChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        int interval = plugin.getConfig().getInt("corona.check-interval-ticks", 40);
-        double distance = plugin.getConfig().getDouble("corona.distance-blocks", 2.0);
+        int interval = plugin.getSettingsManager().getInt("corona.check-interval-ticks", 40);
+        double distance = plugin.getSettingsManager().getDouble("corona.distance-blocks", 2.0);
 
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
@@ -59,6 +62,14 @@ public class CoronaChallenge extends Challenge {
                 }
             }
         }, 0L, interval);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("corona.check-interval-ticks", "Check Interval (ticks)", 40, 10, 200, 10),
+                ConfigurableSetting.ofDouble("corona.distance-blocks", "Distance (blocks)", 2.0, 1.0, 10.0, 0.5)
+        );
     }
 
     @Override

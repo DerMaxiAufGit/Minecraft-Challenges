@@ -3,6 +3,7 @@ package de.challenge.challenges.misc;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import net.kyori.adventure.text.format.TextDecoration;
@@ -14,6 +15,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.time.Duration;
+import java.util.List;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class RandomMLGChallenge extends Challenge {
@@ -45,10 +47,10 @@ public class RandomMLGChallenge extends Challenge {
     }
 
     private void scheduleNext() {
-        int minInterval = plugin.getConfig().getInt("random-mlg.min-interval-seconds", 600);
-        int maxInterval = plugin.getConfig().getInt("random-mlg.max-interval-seconds", 900);
-        int warningSeconds = plugin.getConfig().getInt("random-mlg.warning-seconds", 10);
-        int height = plugin.getConfig().getInt("random-mlg.height", 40);
+        int minInterval = plugin.getSettingsManager().getInt("random-mlg.min-interval-seconds", 600);
+        int maxInterval = plugin.getSettingsManager().getInt("random-mlg.max-interval-seconds", 900);
+        int warningSeconds = plugin.getSettingsManager().getInt("random-mlg.warning-seconds", 10);
+        int height = plugin.getSettingsManager().getInt("random-mlg.height", 40);
 
         int interval = ThreadLocalRandom.current().nextInt(minInterval, maxInterval + 1);
         int warningDelay = Math.max(0, interval - warningSeconds);
@@ -78,6 +80,16 @@ public class RandomMLGChallenge extends Challenge {
             }
             scheduleNext();
         }, interval * 20L);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("random-mlg.min-interval-seconds", "Min Interval (s)", 600, 60, 1800, 60),
+                ConfigurableSetting.ofInt("random-mlg.max-interval-seconds", "Max Interval (s)", 900, 120, 3600, 60),
+                ConfigurableSetting.ofInt("random-mlg.height", "Drop Height", 40, 10, 100, 5),
+                ConfigurableSetting.ofInt("random-mlg.warning-seconds", "Warning Time (s)", 10, 3, 30, 1)
+        );
     }
 
     @Override

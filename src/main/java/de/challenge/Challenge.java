@@ -5,6 +5,9 @@ import org.bukkit.event.HandlerList;
 import org.bukkit.event.Listener;
 import org.bukkit.inventory.ItemStack;
 
+import java.util.Collections;
+import java.util.List;
+
 public abstract class Challenge implements Listener {
 
     protected final ChallengePlugin plugin;
@@ -44,5 +47,9 @@ public abstract class Challenge implements Listener {
 
     public boolean isActive() {
         return active;
+    }
+
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return Collections.emptyList();
     }
 }

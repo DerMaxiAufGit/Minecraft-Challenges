@@ -3,6 +3,7 @@ package de.challenge.challenges.damage;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -14,6 +15,7 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
 
 import java.util.HashSet;
+import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
@@ -45,7 +47,7 @@ public class DamageFreezeChallenge extends Challenge {
         if (!active) return;
         if (!(event.getEntity() instanceof Player player)) return;
 
-        int freezeTicks = plugin.getConfig().getInt("damage-freeze.duration-ticks", 60);
+        int freezeTicks = plugin.getSettingsManager().getInt("damage-freeze.duration-ticks", 60);
         frozenPlayers.add(player.getUniqueId());
         player.sendActionBar(Component.text("You are frozen!", NamedTextColor.AQUA));
 
@@ -65,6 +67,13 @@ public class DamageFreezeChallenge extends Challenge {
                 || event.getFrom().getZ() != event.getTo().getZ()) {
             event.setCancelled(true);
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("damage-freeze.duration-ticks", "Freeze Duration (ticks)", 60, 10, 400, 10)
+        );
     }
 
     @Override

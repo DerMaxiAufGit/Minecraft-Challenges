@@ -33,7 +33,12 @@ public class ResetCommand implements CommandExecutor {
             return true;
         }
 
-        if (args.length == 0 || !args[0].equalsIgnoreCase("confirm")) {
+        if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
+            performReset(player);
+            return true;
+        }
+
+        if (args.length == 0) {
             confirmations.put(player.getUniqueId(), System.currentTimeMillis());
             player.sendMessage(Component.text("Are you sure you want to reset the world?", NamedTextColor.RED));
             player.sendMessage(Component.text("Type /reset confirm within 15 seconds to confirm.", NamedTextColor.YELLOW));
@@ -96,7 +101,7 @@ public class ResetCommand implements CommandExecutor {
         String[] files = {
                 "randomizer_blocks.yml", "randomizer_crafting.yml",
                 "randomizer_mobs.yml", "randomizer_biome_effects.yml",
-                "diet_state.yml"
+                "diet_state.yml", "challenge-settings.yml"
         };
         for (String name : files) {
             File f = new File(plugin.getDataFolder(), name);

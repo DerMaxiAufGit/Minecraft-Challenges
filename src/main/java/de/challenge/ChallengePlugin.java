@@ -28,6 +28,7 @@ public class ChallengePlugin extends JavaPlugin implements Listener {
 
     private static ChallengePlugin instance;
     private ChallengeManager challengeManager;
+    private ChallengeSettingsManager settingsManager;
     private TimerManager timerManager;
     private MessageUtil messageUtil;
     private List<File> worldFoldersToDelete = new ArrayList<>();
@@ -58,6 +59,8 @@ public class ChallengePlugin extends JavaPlugin implements Listener {
         saveResource("messages.yml", false);
 
         messageUtil = new MessageUtil(this);
+        settingsManager = new ChallengeSettingsManager(this);
+        settingsManager.load();
         timerManager = new TimerManager(this);
         challengeManager = new ChallengeManager(this);
 
@@ -186,6 +189,10 @@ public class ChallengePlugin extends JavaPlugin implements Listener {
 
     public TimerManager getTimerManager() {
         return timerManager;
+    }
+
+    public ChallengeSettingsManager getSettingsManager() {
+        return settingsManager;
     }
 
     public MessageUtil getMessageUtil() {

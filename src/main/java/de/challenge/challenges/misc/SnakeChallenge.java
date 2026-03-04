@@ -3,6 +3,7 @@ package de.challenge.challenges.misc;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
@@ -41,13 +42,13 @@ public class SnakeChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        String blockName = plugin.getConfig().getString("snake.block", "LIME_CONCRETE");
+        String blockName = plugin.getSettingsManager().getString("snake.block", "LIME_CONCRETE");
         try {
             trailBlock = Material.valueOf(blockName);
         } catch (IllegalArgumentException e) {
             trailBlock = Material.LIME_CONCRETE;
         }
-        maxLength = plugin.getConfig().getInt("snake.max-trail-length", 20);
+        maxLength = plugin.getSettingsManager().getInt("snake.max-trail-length", 20);
     }
 
     @EventHandler
@@ -89,6 +90,14 @@ public class SnakeChallenge extends Challenge {
                 }
             }
         }
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("snake.max-trail-length", "Max Trail Length", 20, 5, 100, 5),
+                ConfigurableSetting.ofString("snake.block", "Trail Block", "LIME_CONCRETE")
+        );
     }
 
     @Override

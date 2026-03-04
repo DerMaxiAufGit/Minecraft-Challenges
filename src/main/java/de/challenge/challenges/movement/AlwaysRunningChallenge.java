@@ -3,6 +3,7 @@ package de.challenge.challenges.movement;
 import de.challenge.Challenge;
 import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
+import de.challenge.ConfigurableSetting;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
@@ -13,6 +14,7 @@ import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 
@@ -43,7 +45,7 @@ public class AlwaysRunningChallenge extends Challenge {
 
     @Override
     protected void onEnable() {
-        int maxIdle = plugin.getConfig().getInt("always-running.max-idle-seconds", 3);
+        int maxIdle = plugin.getSettingsManager().getInt("always-running.max-idle-seconds", 3);
         task = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
             for (Player player : Bukkit.getOnlinePlayers()) {
                 if (player.isDead() || player.isSleeping()) continue;
@@ -70,6 +72,13 @@ public class AlwaysRunningChallenge extends Challenge {
                 lastLocations.put(uuid, current.clone());
             }
         }, 0L, 20L);
+    }
+
+    @Override
+    public List<ConfigurableSetting> getConfigurableSettings() {
+        return List.of(
+                ConfigurableSetting.ofInt("always-running.max-idle-seconds", "Max Idle (s)", 3, 1, 30, 1)
+        );
     }
 
     @Override
