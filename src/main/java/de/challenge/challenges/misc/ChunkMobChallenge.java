@@ -24,7 +24,6 @@ import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
-import org.bukkit.metadata.FixedMetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
 import java.util.ArrayList;
@@ -38,8 +37,6 @@ import java.util.UUID;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class ChunkMobChallenge extends Challenge {
-
-    private static final String MOB_TAG = "chunk_challenge_mob";
 
     private static final long VALIDITY_CHECK_INTERVAL = 60L;
     private static final long PARTICLE_RENDER_INTERVAL = 5L;
@@ -55,7 +52,9 @@ public class ChunkMobChallenge extends Challenge {
     static {
         List<EntityType> mobTypes = new ArrayList<>();
         for (EntityType type : EntityType.values()) {
-            if (type.isAlive() && type.isSpawnable() && type != EntityType.PLAYER) {
+            if (type.isAlive() && type.isSpawnable()
+                    && type != EntityType.PLAYER
+                    && type != EntityType.ENDER_DRAGON) {
                 mobTypes.add(type);
             }
         }
@@ -63,9 +62,11 @@ public class ChunkMobChallenge extends Challenge {
     }
 
     private final Map<ChunkKey, ChunkState> activeChunks = new HashMap<>();
+    private final Map<UUID, ChunkKey> mobToChunk = new HashMap<>();
     private final Set<ChunkKey> clearedChunks = new HashSet<>();
     private final Map<UUID, ChunkKey> playerChunkMap = new HashMap<>();
     private final Set<UUID> graceActive = new HashSet<>();
+    private final List<BukkitTask> graceTasks = new ArrayList<>();
     private BukkitTask validityCheckTask;
     private boolean mobGlow;
     private long gracePeriodTicks;
@@ -112,9 +113,12 @@ public class ChunkMobChallenge extends Challenge {
             state.cleanup(true);
         }
         activeChunks.clear();
+        mobToChunk.clear();
         clearedChunks.clear();
         playerChunkMap.clear();
         graceActive.clear();
+        graceTasks.forEach(BukkitTask::cancel);
+        graceTasks.clear();
     }
 
     @EventHandler
@@ -160,9 +164,8 @@ public class ChunkMobChallenge extends Challenge {
     public void onEntityDeath(EntityDeathEvent event) {
         if (!active) return;
         Entity entity = event.getEntity();
-        if (!entity.hasMetadata(MOB_TAG)) return;
 
-        ChunkKey chunkKey = findChunkForMob(entity);
+        ChunkKey chunkKey = mobToChunk.remove(entity.getUniqueId());
         if (chunkKey == null) return;
 
         ChunkState state = activeChunks.remove(chunkKey);
@@ -203,12 +206,18 @@ public class ChunkMobChallenge extends Challenge {
     @EventHandler
     public void onPlayerRespawn(PlayerRespawnEvent event) {
         if (!active) return;
-        applyGracePeriod(event.getPlayer().getUniqueId());
+        UUID playerId = event.getPlayer().getUniqueId();
+        removePlayerFromChunk(playerId);
+        applyGracePeriod(playerId);
     }
 
     private void applyGracePeriod(UUID playerId) {
         graceActive.add(playerId);
-        Bukkit.getScheduler().runTaskLater(plugin, () -> graceActive.remove(playerId), gracePeriodTicks);
+        BukkitTask task = Bukkit.getScheduler().runTaskLater(plugin, () -> {
+            graceActive.remove(playerId);
+            graceTasks.removeIf(t -> t.isCancelled() || t.getTaskId() == -1);
+        }, gracePeriodTicks);
+        graceTasks.add(task);
     }
 
     private void spawnChunkMob(Player player, ChunkKey chunkKey) {
@@ -225,7 +234,6 @@ public class ChunkMobChallenge extends Challenge {
         Location spawnLoc = new Location(world, spawnX + 0.5, spawnY, spawnZ + 0.5);
 
         Entity mob = world.spawnEntity(spawnLoc, mobType);
-        mob.setMetadata(MOB_TAG, new FixedMetadataValue(plugin, chunkKey.toMetadata()));
 
         if (mob instanceof LivingEntity livingMob) {
             if (mobGlow) {
@@ -252,6 +260,7 @@ public class ChunkMobChallenge extends Challenge {
 
         ChunkState state = new ChunkState(mob, particleTask);
         activeChunks.put(chunkKey, state);
+        mobToChunk.put(mob.getUniqueId(), chunkKey);
 
         lockPlayerIntoChunk(player, chunkKey, state);
 
@@ -273,7 +282,7 @@ public class ChunkMobChallenge extends Challenge {
         WorldBorder border = Bukkit.createWorldBorder();
         border.setCenter(baseX + 8.0, baseZ + 8.0);
         border.setSize(CHUNK_SIZE);
-        border.setDamageBuffer(0);
+        border.setDamageBuffer(0.5);
         border.setDamageAmount(0);
         border.setWarningDistance(0);
         player.setWorldBorder(border);
@@ -300,6 +309,9 @@ public class ChunkMobChallenge extends Challenge {
 
         if (state.lockedPlayers.isEmpty()) {
             activeChunks.remove(chunkKey);
+            if (state.mob != null) {
+                mobToChunk.remove(state.mob.getUniqueId());
+            }
             state.cleanup(true);
         }
     }
@@ -330,6 +342,9 @@ public class ChunkMobChallenge extends Challenge {
 
             if (state.mob == null || state.mob.isDead() || !state.mob.isValid()) {
                 clearedChunks.add(chunkKey);
+                if (state.mob != null) {
+                    mobToChunk.remove(state.mob.getUniqueId());
+                }
                 for (UUID playerId : state.lockedPlayers) {
                     playerChunkMap.remove(playerId);
                     releasePlayer(playerId);
@@ -337,19 +352,11 @@ public class ChunkMobChallenge extends Challenge {
                 state.cleanup(false);
                 it.remove();
             } else if (state.lockedPlayers.isEmpty()) {
+                mobToChunk.remove(state.mob.getUniqueId());
                 state.cleanup(true);
                 it.remove();
             }
         }
-    }
-
-    private ChunkKey findChunkForMob(Entity mob) {
-        for (Map.Entry<ChunkKey, ChunkState> entry : activeChunks.entrySet()) {
-            if (entry.getValue().mob != null && entry.getValue().mob.getUniqueId().equals(mob.getUniqueId())) {
-                return entry.getKey();
-            }
-        }
-        return null;
     }
 
     private void renderChunkBorder(Player player, int chunkX, int chunkZ) {
@@ -365,16 +372,16 @@ public class ChunkMobChallenge extends Challenge {
         Particle particle = Particle.SOUL_FIRE_FLAME;
 
         for (int y = minY; y <= maxY; y++) {
-            for (int x = baseX; x <= baseX + CHUNK_SIZE; x += PARTICLE_STEP) {
+            for (int x = baseX; x < baseX + CHUNK_SIZE; x += PARTICLE_STEP) {
                 spawnParticle(world, player, particle, x, y, baseZ);
             }
-            for (int x = baseX; x <= baseX + CHUNK_SIZE; x += PARTICLE_STEP) {
+            for (int x = baseX; x < baseX + CHUNK_SIZE; x += PARTICLE_STEP) {
                 spawnParticle(world, player, particle, x, y, baseZ + CHUNK_SIZE);
             }
-            for (int z = baseZ; z <= baseZ + CHUNK_SIZE; z += PARTICLE_STEP) {
+            for (int z = baseZ; z < baseZ + CHUNK_SIZE; z += PARTICLE_STEP) {
                 spawnParticle(world, player, particle, baseX, y, z);
             }
-            for (int z = baseZ; z <= baseZ + CHUNK_SIZE; z += PARTICLE_STEP) {
+            for (int z = baseZ; z < baseZ + CHUNK_SIZE; z += PARTICLE_STEP) {
                 spawnParticle(world, player, particle, baseX + CHUNK_SIZE, y, z);
             }
         }
@@ -397,7 +404,7 @@ public class ChunkMobChallenge extends Challenge {
         double clampedX = Math.max(baseX + 0.5, Math.min(baseX + CHUNK_SIZE - 0.5, x));
         double clampedZ = Math.max(baseZ + 0.5, Math.min(baseZ + CHUNK_SIZE - 0.5, z));
 
-        if (clampedX != x || clampedZ != z) {
+        if (Math.abs(clampedX - x) > 1e-6 || Math.abs(clampedZ - z) > 1e-6) {
             mob.teleport(new Location(loc.getWorld(), clampedX, loc.getY(), clampedZ, loc.getYaw(), loc.getPitch()));
         }
     }
@@ -415,11 +422,7 @@ public class ChunkMobChallenge extends Challenge {
         return result.toString();
     }
 
-    private record ChunkKey(UUID worldId, int chunkX, int chunkZ) {
-        String toMetadata() {
-            return worldId + ":" + chunkX + ":" + chunkZ;
-        }
-    }
+    private record ChunkKey(UUID worldId, int chunkX, int chunkZ) {}
 
     private static final class ChunkState {
         final Entity mob;
