@@ -2,6 +2,7 @@ package de.challenge.challenges.movement;
 
 import com.destroystokyo.paper.event.player.PlayerJumpEvent;
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,6 +27,9 @@ public class NoJumpChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Jumping is disabled"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOVEMENT; }
 
     @EventHandler
     public void onJump(PlayerJumpEvent event) {

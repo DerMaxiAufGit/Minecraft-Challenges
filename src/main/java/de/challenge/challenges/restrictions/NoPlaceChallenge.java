@@ -1,6 +1,7 @@
 package de.challenge.challenges.restrictions;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -35,6 +36,9 @@ public class NoPlaceChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Block placing is disabled"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.RESTRICTIONS; }
 
     @EventHandler
     public void onBlockPlace(BlockPlaceEvent event) {

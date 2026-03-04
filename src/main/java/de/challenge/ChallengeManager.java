@@ -82,10 +82,14 @@ public class ChallengeManager implements Listener {
     }
 
     public void stopAll() {
+        stopAll(false);
+    }
+
+    public void stopAll(boolean preserveState) {
         challengeRunning = false;
         for (Challenge c : registeredChallenges.values()) {
             if (c.isActive()) {
-                c.disable();
+                c.disable(preserveState);
             }
         }
     }
@@ -122,7 +126,7 @@ public class ChallengeManager implements Listener {
         challengeEnded = true;
         String time = plugin.getTimerManager().getFormattedTime();
         plugin.getTimerManager().stop();
-        stopAll();
+        stopAll(true);
 
         Title title = Title.title(
                 Component.text("Challenge Complete!", NamedTextColor.GREEN, TextDecoration.BOLD),
@@ -139,7 +143,7 @@ public class ChallengeManager implements Listener {
     private void onChallengeLost(Player deadPlayer) {
         challengeEnded = true;
         plugin.getTimerManager().stop();
-        stopAll();
+        stopAll(true);
 
         Title title = Title.title(
                 Component.text("Challenge Failed!", NamedTextColor.RED, TextDecoration.BOLD),
@@ -166,6 +170,19 @@ public class ChallengeManager implements Listener {
         return Collections.unmodifiableMap(registeredChallenges);
     }
 
+    public List<Challenge> getChallengesByCategory(ChallengeCategory category) {
+        return registeredChallenges.values().stream()
+                .filter(c -> c.getCategory() == category)
+                .collect(Collectors.toList());
+    }
+
+    public long getActiveChallengeCountInCategory(ChallengeCategory category) {
+        return registeredChallenges.values().stream()
+                .filter(c -> c.getCategory() == category)
+                .filter(c -> activeChallengeIds.contains(c.getId()))
+                .count();
+    }
+
     public Set<String> getActiveChallengeIds() {
         return Collections.unmodifiableSet(activeChallengeIds);
     }
@@ -185,6 +202,7 @@ public class ChallengeManager implements Listener {
         config.set("timer-seconds", plugin.getTimerManager().getElapsedSeconds());
         config.set("timer-running", plugin.getTimerManager().isRunning());
         config.set("challenge-running", challengeRunning);
+        config.set("challenge-ended", challengeEnded);
         try {
             config.save(file);
         } catch (IOException e) {
@@ -205,9 +223,10 @@ public class ChallengeManager implements Listener {
         long timerSeconds = config.getLong("timer-seconds", 0);
         boolean timerRunning = config.getBoolean("timer-running", false);
         boolean wasRunning = config.getBoolean("challenge-running", false);
+        challengeEnded = config.getBoolean("challenge-ended", false);
 
         plugin.getTimerManager().loadState(timerSeconds, timerRunning);
-        if (wasRunning) {
+        if (wasRunning && !challengeEnded) {
             challengeRunning = true;
             startAll();
         }

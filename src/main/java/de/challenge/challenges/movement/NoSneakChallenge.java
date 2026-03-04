@@ -1,6 +1,7 @@
 package de.challenge.challenges.movement;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,6 +27,9 @@ public class NoSneakChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Sneaking is disabled"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOVEMENT; }
 
     @EventHandler
     public void onSneak(PlayerToggleSneakEvent event) {

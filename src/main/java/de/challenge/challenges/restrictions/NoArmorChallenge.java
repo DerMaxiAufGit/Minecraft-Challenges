@@ -6,28 +6,29 @@ import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Material;
+import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.inventory.InventoryClickEvent;
-import org.bukkit.inventory.MerchantInventory;
+import org.bukkit.event.inventory.InventoryType;
 import org.bukkit.inventory.ItemStack;
 
-public class NoTradingChallenge extends Challenge {
+public class NoArmorChallenge extends Challenge {
 
-    public NoTradingChallenge(ChallengePlugin plugin) {
+    public NoArmorChallenge(ChallengePlugin plugin) {
         super(plugin);
     }
 
     @Override
-    public String getId() { return "no_trading"; }
+    public String getId() { return "no_armor"; }
 
     @Override
-    public String getDisplayName() { return "No Trading"; }
+    public String getDisplayName() { return "No Armor"; }
 
     @Override
-    public ItemStack getIcon() { return new ItemStack(Material.EMERALD); }
+    public ItemStack getIcon() { return new ItemStack(Material.IRON_CHESTPLATE); }
 
     @Override
-    public String getDescription() { return "Villager trading is disabled"; }
+    public String getDescription() { return "Cannot equip armor"; }
 
     @Override
     public ChallengeCategory getCategory() { return ChallengeCategory.RESTRICTIONS; }
@@ -35,9 +36,12 @@ public class NoTradingChallenge extends Challenge {
     @EventHandler
     public void onInventoryClick(InventoryClickEvent event) {
         if (!active) return;
-        if (event.getInventory() instanceof MerchantInventory) {
+        if (!(event.getWhoClicked() instanceof Player player)) return;
+
+        InventoryType.SlotType slotType = event.getSlotType();
+        if (slotType == InventoryType.SlotType.ARMOR) {
             event.setCancelled(true);
-            event.getWhoClicked().sendMessage(Component.text("Trading is disabled!", NamedTextColor.RED));
+            player.sendMessage(Component.text("You cannot equip armor!", NamedTextColor.RED));
         }
     }
 }

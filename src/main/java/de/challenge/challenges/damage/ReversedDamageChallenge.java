@@ -1,6 +1,7 @@
 package de.challenge.challenges.damage;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -25,6 +26,9 @@ public class ReversedDamageChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Damage you deal may reflect back to you"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.DAMAGE; }
 
     @EventHandler
     public void onDamage(EntityDamageByEntityEvent event) {

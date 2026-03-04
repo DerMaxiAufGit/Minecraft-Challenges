@@ -1,6 +1,7 @@
 package de.challenge.challenges.damage;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -26,6 +27,9 @@ public class AchievementDamageChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Take damage when earning advancements"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.DAMAGE; }
 
     @EventHandler
     public void onAdvancement(PlayerAdvancementDoneEvent event) {

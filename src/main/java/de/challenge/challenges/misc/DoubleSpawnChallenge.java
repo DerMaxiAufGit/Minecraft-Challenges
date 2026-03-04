@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Material;
 import org.bukkit.entity.LivingEntity;
@@ -29,6 +30,9 @@ public class DoubleSpawnChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Naturally spawning mobs are doubled"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOBS; }
 
     @EventHandler
     public void onSpawn(CreatureSpawnEvent event) {

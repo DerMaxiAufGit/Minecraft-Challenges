@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -29,6 +30,9 @@ public class AnvilRainChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Anvils periodically fall from the sky"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.ENVIRONMENTAL; }
 
     @Override
     protected void onEnable() {

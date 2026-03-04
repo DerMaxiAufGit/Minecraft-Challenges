@@ -1,6 +1,7 @@
 package de.challenge.challenges.movement;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -36,6 +37,9 @@ public class AlwaysRunningChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "You must keep moving or take damage"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOVEMENT; }
 
     @Override
     protected void onEnable() {

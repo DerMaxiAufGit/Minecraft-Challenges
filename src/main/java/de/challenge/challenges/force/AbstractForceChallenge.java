@@ -1,6 +1,7 @@
 package de.challenge.challenges.force;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -21,6 +22,9 @@ public abstract class AbstractForceChallenge extends Challenge {
     public AbstractForceChallenge(ChallengePlugin plugin) {
         super(plugin);
     }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.FORCE; }
 
     protected abstract String getConfigPrefix();
     protected abstract String pickObjective();

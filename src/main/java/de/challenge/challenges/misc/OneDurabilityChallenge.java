@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Material;
 import org.bukkit.event.EventHandler;
@@ -25,6 +26,9 @@ public class OneDurabilityChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Items break after one more use"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.INVENTORY; }
 
     @EventHandler
     public void onItemDamage(PlayerItemDamageEvent event) {

@@ -1,6 +1,7 @@
 package de.challenge.challenges.damage;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Material;
 import org.bukkit.entity.Player;
@@ -53,6 +54,9 @@ public class RandomPotionOnDamageChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Taking damage gives a random potion effect"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.DAMAGE; }
 
     @EventHandler
     public void onDamage(EntityDamageEvent event) {

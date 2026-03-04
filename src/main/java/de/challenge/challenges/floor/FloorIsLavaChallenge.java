@@ -1,6 +1,7 @@
 package de.challenge.challenges.floor;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Location;
@@ -33,6 +34,9 @@ public class FloorIsLavaChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Blocks you walk on turn to lava"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.FLOOR; }
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {

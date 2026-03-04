@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -33,6 +34,9 @@ public class CoronaChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Stay away from mobs or get poisoned"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOBS; }
 
     @Override
     protected void onEnable() {

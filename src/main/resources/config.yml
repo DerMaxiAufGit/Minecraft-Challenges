@@ -92,3 +92,24 @@ random-potion-on-damage:
   min-duration-seconds: 5
   max-duration-seconds: 30
   max-amplifier: 2
+
+# New challenges
+random-item-drop:
+  interval-ticks: 600
+
+damage-freeze:
+  duration-ticks: 60
+
+shrinking-border:
+  start-size: 1000
+  min-size: 50
+  shrink-per-minute: 10
+
+level-border:
+  multiplier: 10.0
+  min-size: 20.0
+
+biome-effect:
+  check-interval-ticks: 40
+  effect-duration-seconds: 10
+  amplifier: 0

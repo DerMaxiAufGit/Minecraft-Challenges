@@ -1,7 +1,7 @@
 package de.challenge.commands;
 
 import de.challenge.ChallengePlugin;
-import de.challenge.gui.ChallengeGUI;
+import de.challenge.gui.CategoryMenuGUI;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -23,7 +23,7 @@ public class ChallengeCommand implements CommandExecutor {
             sender.sendMessage("This command can only be used by players.");
             return true;
         }
-        new ChallengeGUI(plugin, player, 0).open();
+        new CategoryMenuGUI(plugin, player).open();
         return true;
     }
 }

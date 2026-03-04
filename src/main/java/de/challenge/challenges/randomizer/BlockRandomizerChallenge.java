@@ -1,6 +1,7 @@
 package de.challenge.challenges.randomizer;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import de.challenge.util.RandomizerMap;
 import org.bukkit.Material;
@@ -38,6 +39,9 @@ public class BlockRandomizerChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Blocks drop random items"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.RANDOMIZER; }
 
     @Override
     protected void onEnable() {
@@ -82,7 +86,10 @@ public class BlockRandomizerChallenge extends Challenge {
     @Override
     protected void onDisable() {
         if (blockMap != null) {
-            blockMap.delete();
+            if (!preservingState) {
+                blockMap.delete();
+            }
+            blockMap = null;
         }
     }
 }

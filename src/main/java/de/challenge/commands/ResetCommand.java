@@ -5,7 +5,6 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.World;
-import org.bukkit.WorldCreator;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandExecutor;
 import org.bukkit.command.CommandSender;
@@ -13,9 +12,8 @@ import org.bukkit.entity.Player;
 import org.jetbrains.annotations.NotNull;
 
 import java.io.File;
-import java.util.HashMap;
-import java.util.Map;
-import java.util.UUID;
+import java.io.IOException;
+import java.util.*;
 
 public class ResetCommand implements CommandExecutor {
 
@@ -57,74 +55,63 @@ public class ResetCommand implements CommandExecutor {
         plugin.getTimerManager().reset();
         plugin.getTimerManager().hideFromAll();
 
-        Bukkit.broadcast(Component.text("World is resetting...", NamedTextColor.RED));
+        Bukkit.broadcast(Component.text("World is resetting... Server will restart.", NamedTextColor.RED));
 
-        // Kick all players
+        // Delete randomizer data and state before shutdown
+        deleteRandomizerFiles();
+        File stateFile = new File(plugin.getDataFolder(), "state.yml");
+        if (stateFile.exists()) {
+            stateFile.delete();
+        }
+
+        // Write a marker file so onLoad() deletes world folders BEFORE they are loaded on next start
+        File marker = new File(plugin.getDataFolder(), "reset_pending");
+        plugin.getDataFolder().mkdirs();
+        try {
+            marker.createNewFile();
+        } catch (IOException e) {
+            plugin.getLogger().severe("Failed to create reset marker: " + e.getMessage());
+        }
+
+        // Disable auto-save to prevent world data from being written during shutdown
+        for (String worldName : List.of("world", "world_nether", "world_the_end")) {
+            World w = Bukkit.getWorld(worldName);
+            if (w != null) {
+                w.setAutoSave(false);
+            }
+        }
+
+        // Signal to onDisable() that this is a reset (skip state saving)
+        plugin.setWorldFoldersToDelete(List.of(new File("reset_marker_only")));
+
+        // Kick all players then restart the server
         for (Player p : Bukkit.getOnlinePlayers()) {
             p.kick(Component.text("World is being reset. Please rejoin!", NamedTextColor.YELLOW));
         }
 
-        // Schedule world deletion/recreation on next tick
-        Bukkit.getScheduler().runTaskLater(plugin, () -> {
-            World world = Bukkit.getWorld("world");
-            if (world != null) {
-                Bukkit.unloadWorld(world, false);
-                deleteDirectory(world.getWorldFolder());
-            }
-
-            World nether = Bukkit.getWorld("world_nether");
-            if (nether != null) {
-                Bukkit.unloadWorld(nether, false);
-                deleteDirectory(nether.getWorldFolder());
-            }
-
-            World end = Bukkit.getWorld("world_the_end");
-            if (end != null) {
-                Bukkit.unloadWorld(end, false);
-                deleteDirectory(end.getWorldFolder());
-            }
-
-            // Recreate worlds
-            Bukkit.createWorld(new WorldCreator("world"));
-            Bukkit.createWorld(new WorldCreator("world_nether").environment(World.Environment.NETHER));
-            Bukkit.createWorld(new WorldCreator("world_the_end").environment(World.Environment.THE_END));
-
-            // Delete randomizer data
-            deleteRandomizerFiles();
-
-            // Delete state
-            File stateFile = new File(plugin.getDataFolder(), "state.yml");
-            if (stateFile.exists()) {
-                stateFile.delete();
-            }
-
-            plugin.getLogger().info("World reset complete.");
-        }, 20L);
+        Bukkit.getScheduler().runTaskLater(plugin, () -> Bukkit.getServer().shutdown(), 10L);
     }
 
     private void deleteRandomizerFiles() {
-        String[] files = {"randomizer_blocks.yml", "randomizer_crafting.yml", "randomizer_mobs.yml"};
+        String[] files = {
+                "randomizer_blocks.yml", "randomizer_crafting.yml",
+                "randomizer_mobs.yml", "randomizer_biome_effects.yml",
+                "diet_state.yml"
+        };
         for (String name : files) {
             File f = new File(plugin.getDataFolder(), name);
             if (f.exists()) {
                 f.delete();
             }
         }
-    }
-
-    @SuppressWarnings("ResultOfMethodCallIgnored")
-    private void deleteDirectory(File dir) {
-        if (dir == null || !dir.exists()) return;
-        File[] files = dir.listFiles();
-        if (files != null) {
-            for (File f : files) {
-                if (f.isDirectory()) {
-                    deleteDirectory(f);
-                } else {
-                    f.delete();
-                }
+        // Delete project progress files
+        File[] projectFiles = plugin.getDataFolder().listFiles(
+                (dir, name) -> name.startsWith("project_") && name.endsWith(".yml"));
+        if (projectFiles != null) {
+            for (File f : projectFiles) {
+                f.delete();
             }
         }
-        dir.delete();
     }
+
 }

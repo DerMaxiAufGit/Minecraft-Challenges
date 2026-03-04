@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -10,6 +11,8 @@ import org.bukkit.Material;
 import org.bukkit.Particle;
 import org.bukkit.Sound;
 import org.bukkit.World;
+import org.bukkit.WorldBorder;
+import org.bukkit.entity.Ageable;
 import org.bukkit.entity.Entity;
 import org.bukkit.entity.EntityType;
 import org.bukkit.entity.LivingEntity;
@@ -22,9 +25,9 @@ import org.bukkit.event.player.PlayerQuitEvent;
 import org.bukkit.event.player.PlayerRespawnEvent;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.metadata.FixedMetadataValue;
-import org.bukkit.metadata.MetadataValue;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.HashSet;
 import java.util.Iterator;
@@ -46,18 +49,22 @@ public class ChunkMobChallenge extends Challenge {
     private static final int PARTICLE_RENDER_DISTANCE_SQ = 1024;
     private static final int CHUNK_SIZE = 16;
 
-    private static final List<EntityType> MOBS = List.of(
-            EntityType.ZOMBIE, EntityType.SKELETON, EntityType.SPIDER,
-            EntityType.CREEPER, EntityType.ENDERMAN, EntityType.WITCH,
-            EntityType.BLAZE, EntityType.SLIME, EntityType.PHANTOM,
-            EntityType.DROWNED, EntityType.HUSK, EntityType.STRAY,
-            EntityType.WITHER_SKELETON, EntityType.PIGLIN, EntityType.HOGLIN,
-            EntityType.ZOMBIFIED_PIGLIN, EntityType.MAGMA_CUBE,
-            EntityType.SILVERFISH, EntityType.CAVE_SPIDER, EntityType.VINDICATOR,
-            EntityType.PILLAGER, EntityType.GUARDIAN
-    );
+    private static final List<EntityType> MOBS;
+    private static final double BABY_CHANCE = 0.3;
 
-    private final Map<UUID, ChunkLockState> lockedPlayers = new HashMap<>();
+    static {
+        List<EntityType> mobTypes = new ArrayList<>();
+        for (EntityType type : EntityType.values()) {
+            if (type.isAlive() && type.isSpawnable() && type != EntityType.PLAYER) {
+                mobTypes.add(type);
+            }
+        }
+        MOBS = List.copyOf(mobTypes);
+    }
+
+    private final Map<ChunkKey, ChunkState> activeChunks = new HashMap<>();
+    private final Set<ChunkKey> clearedChunks = new HashSet<>();
+    private final Map<UUID, ChunkKey> playerChunkMap = new HashMap<>();
     private final Set<UUID> graceActive = new HashSet<>();
     private BukkitTask validityCheckTask;
     private boolean mobGlow;
@@ -80,30 +87,15 @@ public class ChunkMobChallenge extends Challenge {
     public String getDescription() { return "Each new chunk spawns a mob you must defeat to leave"; }
 
     @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOBS; }
+
+    @Override
     protected void onEnable() {
         mobGlow = plugin.getConfig().getBoolean("chunk-mob.mob-glow", true);
         gracePeriodTicks = plugin.getConfig().getLong("chunk-mob.grace-period-ticks", 60L);
 
-        validityCheckTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
-            Iterator<Map.Entry<UUID, ChunkLockState>> it = lockedPlayers.entrySet().iterator();
-            while (it.hasNext()) {
-                Map.Entry<UUID, ChunkLockState> entry = it.next();
-                UUID playerId = entry.getKey();
-                ChunkLockState state = entry.getValue();
-
-                Player player = Bukkit.getPlayer(playerId);
-                if (player == null || !player.isOnline()) {
-                    unlockPlayer(playerId, state, true);
-                    it.remove();
-                    continue;
-                }
-
-                if (state.mob() == null || state.mob().isDead() || !state.mob().isValid()) {
-                    unlockPlayer(playerId, state, false);
-                    it.remove();
-                }
-            }
-        }, VALIDITY_CHECK_INTERVAL, VALIDITY_CHECK_INTERVAL);
+        validityCheckTask = Bukkit.getScheduler().runTaskTimer(plugin, this::cleanupInvalidChunks,
+                VALIDITY_CHECK_INTERVAL, VALIDITY_CHECK_INTERVAL);
     }
 
     @Override
@@ -112,10 +104,16 @@ public class ChunkMobChallenge extends Challenge {
             validityCheckTask.cancel();
             validityCheckTask = null;
         }
-        for (Map.Entry<UUID, ChunkLockState> entry : lockedPlayers.entrySet()) {
-            unlockPlayer(entry.getKey(), entry.getValue(), true);
+        for (Map.Entry<ChunkKey, ChunkState> entry : activeChunks.entrySet()) {
+            ChunkState state = entry.getValue();
+            for (UUID playerId : state.lockedPlayers) {
+                releasePlayer(playerId);
+            }
+            state.cleanup(true);
         }
-        lockedPlayers.clear();
+        activeChunks.clear();
+        clearedChunks.clear();
+        playerChunkMap.clear();
         graceActive.clear();
     }
 
@@ -135,10 +133,9 @@ public class ChunkMobChallenge extends Challenge {
 
         if (fromChunkX == toChunkX && fromChunkZ == toChunkZ) return;
 
-        ChunkLockState state = lockedPlayers.get(playerId);
-
-        if (state != null) {
-            if (toChunkX != state.chunkX() || toChunkZ != state.chunkZ()) {
+        ChunkKey lockedIn = playerChunkMap.get(playerId);
+        if (lockedIn != null) {
+            if (toChunkX != lockedIn.chunkX || toChunkZ != lockedIn.chunkZ) {
                 event.setCancelled(true);
                 player.sendActionBar(Component.text("Kill the mob to leave this chunk!", NamedTextColor.RED));
             }
@@ -147,7 +144,16 @@ public class ChunkMobChallenge extends Challenge {
 
         if (graceActive.contains(playerId)) return;
 
-        spawnChunkMob(player, toChunkX, toChunkZ);
+        ChunkKey targetChunk = new ChunkKey(player.getWorld().getUID(), toChunkX, toChunkZ);
+
+        if (clearedChunks.contains(targetChunk)) return;
+
+        ChunkState existing = activeChunks.get(targetChunk);
+        if (existing != null) {
+            lockPlayerIntoChunk(player, targetChunk, existing);
+        } else {
+            spawnChunkMob(player, targetChunk);
+        }
     }
 
     @EventHandler
@@ -156,38 +162,36 @@ public class ChunkMobChallenge extends Challenge {
         Entity entity = event.getEntity();
         if (!entity.hasMetadata(MOB_TAG)) return;
 
-        List<MetadataValue> metadata = entity.getMetadata(MOB_TAG);
-        if (metadata.isEmpty()) return;
+        ChunkKey chunkKey = findChunkForMob(entity);
+        if (chunkKey == null) return;
 
-        UUID ownerId;
-        try {
-            ownerId = UUID.fromString(metadata.get(0).asString());
-        } catch (IllegalArgumentException e) {
-            return;
-        }
-
-        ChunkLockState state = lockedPlayers.remove(ownerId);
+        ChunkState state = activeChunks.remove(chunkKey);
         if (state == null) return;
 
-        unlockPlayer(ownerId, state, false);
+        clearedChunks.add(chunkKey);
 
-        Player player = Bukkit.getPlayer(ownerId);
-        if (player != null && player.isOnline()) {
-            String mobName = formatMobName(entity.getType().name());
-            player.sendMessage(Component.text("Mob defeated! ", NamedTextColor.GREEN)
-                    .append(Component.text("You killed the " + mobName + ".", NamedTextColor.GRAY)));
-            player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f);
+        String mobName = formatMobName(entity.getType().name());
+
+        for (UUID playerId : state.lockedPlayers) {
+            playerChunkMap.remove(playerId);
+            releasePlayer(playerId);
+
+            Player player = Bukkit.getPlayer(playerId);
+            if (player != null && player.isOnline()) {
+                player.sendMessage(Component.text("Chunk cleared! ", NamedTextColor.GREEN)
+                        .append(Component.text("The " + mobName + " has been defeated.", NamedTextColor.GRAY)));
+                player.playSound(player.getLocation(), Sound.ENTITY_PLAYER_LEVELUP, 1f, 1.5f);
+            }
         }
+
+        state.cleanup(false);
     }
 
     @EventHandler
     public void onPlayerQuit(PlayerQuitEvent event) {
         UUID playerId = event.getPlayer().getUniqueId();
         graceActive.remove(playerId);
-        ChunkLockState state = lockedPlayers.remove(playerId);
-        if (state != null) {
-            unlockPlayer(playerId, state, true);
-        }
+        removePlayerFromChunk(playerId);
     }
 
     @EventHandler
@@ -207,21 +211,21 @@ public class ChunkMobChallenge extends Challenge {
         Bukkit.getScheduler().runTaskLater(plugin, () -> graceActive.remove(playerId), gracePeriodTicks);
     }
 
-    private void spawnChunkMob(Player player, int chunkX, int chunkZ) {
+    private void spawnChunkMob(Player player, ChunkKey chunkKey) {
         EntityType mobType = MOBS.get(ThreadLocalRandom.current().nextInt(MOBS.size()));
 
         World world = player.getWorld();
-        int baseX = chunkX << 4;
-        int baseZ = chunkZ << 4;
+        int baseX = chunkKey.chunkX << 4;
+        int baseZ = chunkKey.chunkZ << 4;
 
-        int spawnX = Math.max(baseX + 1, Math.min(baseX + CHUNK_SIZE - 2, player.getLocation().getBlockX() + 2));
-        int spawnZ = Math.max(baseZ + 1, Math.min(baseZ + CHUNK_SIZE - 2, player.getLocation().getBlockZ() + 2));
+        int spawnX = baseX + 8;
+        int spawnZ = baseZ + 8;
         int spawnY = world.getHighestBlockYAt(spawnX, spawnZ) + 1;
 
         Location spawnLoc = new Location(world, spawnX + 0.5, spawnY, spawnZ + 0.5);
 
         Entity mob = world.spawnEntity(spawnLoc, mobType);
-        mob.setMetadata(MOB_TAG, new FixedMetadataValue(plugin, player.getUniqueId().toString()));
+        mob.setMetadata(MOB_TAG, new FixedMetadataValue(plugin, chunkKey.toMetadata()));
 
         if (mob instanceof LivingEntity livingMob) {
             if (mobGlow) {
@@ -230,17 +234,122 @@ public class ChunkMobChallenge extends Challenge {
             livingMob.setRemoveWhenFarAway(false);
         }
 
-        BukkitTask particleTask = Bukkit.getScheduler().runTaskTimer(plugin,
-                () -> renderChunkBorder(player, chunkX, chunkZ), 0L, PARTICLE_RENDER_INTERVAL);
+        if (mob instanceof Ageable ageable && ThreadLocalRandom.current().nextDouble() < BABY_CHANCE) {
+            ageable.setBaby();
+        }
 
-        ChunkLockState state = new ChunkLockState(chunkX, chunkZ, mob, particleTask);
-        lockedPlayers.put(player.getUniqueId(), state);
+        BukkitTask particleTask = Bukkit.getScheduler().runTaskTimer(plugin, () -> {
+            ChunkState currentState = activeChunks.get(chunkKey);
+            if (currentState == null) return;
+            for (UUID lockedId : currentState.lockedPlayers) {
+                Player lockedPlayer = Bukkit.getPlayer(lockedId);
+                if (lockedPlayer != null && lockedPlayer.isOnline()) {
+                    renderChunkBorder(lockedPlayer, chunkKey.chunkX, chunkKey.chunkZ);
+                }
+            }
+            clampMobToChunk(mob, baseX, baseZ);
+        }, 0L, PARTICLE_RENDER_INTERVAL);
+
+        ChunkState state = new ChunkState(mob, particleTask);
+        activeChunks.put(chunkKey, state);
+
+        lockPlayerIntoChunk(player, chunkKey, state);
 
         String mobName = formatMobName(mobType.name());
         player.sendMessage(Component.text("A ", NamedTextColor.YELLOW)
                 .append(Component.text(mobName, NamedTextColor.RED))
                 .append(Component.text(" has spawned! Kill it to leave this chunk.", NamedTextColor.YELLOW)));
         player.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_SUMMON, 0.5f, 1.5f);
+    }
+
+    private void lockPlayerIntoChunk(Player player, ChunkKey chunkKey, ChunkState state) {
+        UUID playerId = player.getUniqueId();
+        state.lockedPlayers.add(playerId);
+        playerChunkMap.put(playerId, chunkKey);
+
+        int baseX = chunkKey.chunkX << 4;
+        int baseZ = chunkKey.chunkZ << 4;
+
+        WorldBorder border = Bukkit.createWorldBorder();
+        border.setCenter(baseX + 8.0, baseZ + 8.0);
+        border.setSize(CHUNK_SIZE);
+        border.setDamageBuffer(0);
+        border.setDamageAmount(0);
+        border.setWarningDistance(0);
+        player.setWorldBorder(border);
+
+        if (state.lockedPlayers.size() > 1) {
+            String mobName = formatMobName(state.mob.getType().name());
+            player.sendMessage(Component.text("This chunk already has a ", NamedTextColor.YELLOW)
+                    .append(Component.text(mobName, NamedTextColor.RED))
+                    .append(Component.text("! Help kill it to leave.", NamedTextColor.YELLOW)));
+            player.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_SUMMON, 0.5f, 1.5f);
+        }
+    }
+
+    private void removePlayerFromChunk(UUID playerId) {
+        ChunkKey chunkKey = playerChunkMap.remove(playerId);
+        if (chunkKey == null) return;
+
+        releasePlayer(playerId);
+
+        ChunkState state = activeChunks.get(chunkKey);
+        if (state == null) return;
+
+        state.lockedPlayers.remove(playerId);
+
+        if (state.lockedPlayers.isEmpty()) {
+            activeChunks.remove(chunkKey);
+            state.cleanup(true);
+        }
+    }
+
+    private void releasePlayer(UUID playerId) {
+        Player player = Bukkit.getPlayer(playerId);
+        if (player != null && player.isOnline()) {
+            player.setWorldBorder(null);
+        }
+    }
+
+    private void cleanupInvalidChunks() {
+        Iterator<Map.Entry<ChunkKey, ChunkState>> it = activeChunks.entrySet().iterator();
+        while (it.hasNext()) {
+            Map.Entry<ChunkKey, ChunkState> entry = it.next();
+            ChunkKey chunkKey = entry.getKey();
+            ChunkState state = entry.getValue();
+
+            state.lockedPlayers.removeIf(playerId -> {
+                Player player = Bukkit.getPlayer(playerId);
+                if (player == null || !player.isOnline()) {
+                    playerChunkMap.remove(playerId);
+                    releasePlayer(playerId);
+                    return true;
+                }
+                return false;
+            });
+
+            if (state.mob == null || state.mob.isDead() || !state.mob.isValid()) {
+                clearedChunks.add(chunkKey);
+                for (UUID playerId : state.lockedPlayers) {
+                    playerChunkMap.remove(playerId);
+                    releasePlayer(playerId);
+                }
+                state.cleanup(false);
+                it.remove();
+            } else if (state.lockedPlayers.isEmpty()) {
+                state.cleanup(true);
+                it.remove();
+            }
+        }
+    }
+
+    private ChunkKey findChunkForMob(Entity mob) {
+        for (Map.Entry<ChunkKey, ChunkState> entry : activeChunks.entrySet()) {
+            if (entry.getValue().mob != null && entry.getValue().mob.getUniqueId().equals(mob.getUniqueId())) {
+                return entry.getKey();
+            }
+        }
+        return null;
     }
 
     private void renderChunkBorder(Player player, int chunkX, int chunkZ) {
@@ -278,12 +387,18 @@ public class ChunkMobChallenge extends Challenge {
         }
     }
 
-    private void unlockPlayer(UUID playerId, ChunkLockState state, boolean removeMob) {
-        if (state.particleTask() != null) {
-            state.particleTask().cancel();
-        }
-        if (removeMob && state.mob() != null && state.mob().isValid() && !state.mob().isDead()) {
-            state.mob().remove();
+    private void clampMobToChunk(Entity mob, int baseX, int baseZ) {
+        if (mob == null || mob.isDead() || !mob.isValid()) return;
+
+        Location loc = mob.getLocation();
+        double x = loc.getX();
+        double z = loc.getZ();
+
+        double clampedX = Math.max(baseX + 0.5, Math.min(baseX + CHUNK_SIZE - 0.5, x));
+        double clampedZ = Math.max(baseZ + 0.5, Math.min(baseZ + CHUNK_SIZE - 0.5, z));
+
+        if (clampedX != x || clampedZ != z) {
+            mob.teleport(new Location(loc.getWorld(), clampedX, loc.getY(), clampedZ, loc.getYaw(), loc.getPitch()));
         }
     }
 
@@ -300,5 +415,29 @@ public class ChunkMobChallenge extends Challenge {
         return result.toString();
     }
 
-    private record ChunkLockState(int chunkX, int chunkZ, Entity mob, BukkitTask particleTask) {}
+    private record ChunkKey(UUID worldId, int chunkX, int chunkZ) {
+        String toMetadata() {
+            return worldId + ":" + chunkX + ":" + chunkZ;
+        }
+    }
+
+    private static final class ChunkState {
+        final Entity mob;
+        final BukkitTask particleTask;
+        final Set<UUID> lockedPlayers = new HashSet<>();
+
+        ChunkState(Entity mob, BukkitTask particleTask) {
+            this.mob = mob;
+            this.particleTask = particleTask;
+        }
+
+        void cleanup(boolean removeMob) {
+            if (particleTask != null) {
+                particleTask.cancel();
+            }
+            if (removeMob && mob != null && mob.isValid() && !mob.isDead()) {
+                mob.remove();
+            }
+        }
+    }
 }

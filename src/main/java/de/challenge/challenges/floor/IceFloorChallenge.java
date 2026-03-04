@@ -1,6 +1,7 @@
 package de.challenge.challenges.floor;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
@@ -34,6 +35,9 @@ public class IceFloorChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Ice forms under your feet (toggle with sneak)"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.FLOOR; }
 
     @Override
     protected void onEnable() {

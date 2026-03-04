@@ -1,6 +1,7 @@
 package de.challenge.challenges.randomizer;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import de.challenge.util.RandomizerMap;
 import org.bukkit.Material;
@@ -35,6 +36,9 @@ public class MobDropRandomizerChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Mob drops are randomized"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.RANDOMIZER; }
 
     @Override
     protected void onEnable() {
@@ -85,7 +89,10 @@ public class MobDropRandomizerChallenge extends Challenge {
     @Override
     protected void onDisable() {
         if (mobMap != null) {
-            mobMap.delete();
+            if (!preservingState) {
+                mobMap.delete();
+            }
+            mobMap = null;
         }
     }
 }

@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
@@ -34,6 +35,9 @@ public class RandomMLGChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Get teleported up randomly - land safely!"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.ENVIRONMENTAL; }
 
     @Override
     protected void onEnable() {

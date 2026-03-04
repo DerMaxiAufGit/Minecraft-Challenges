@@ -1,6 +1,7 @@
 package de.challenge.challenges.movement;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import net.kyori.adventure.bossbar.BossBar;
 import net.kyori.adventure.text.Component;
@@ -39,6 +40,9 @@ public class TrafficLightChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "Stop on red light or die"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.MOVEMENT; }
 
     @Override
     protected void onEnable() {

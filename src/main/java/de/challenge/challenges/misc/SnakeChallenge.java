@@ -1,6 +1,7 @@
 package de.challenge.challenges.misc;
 
 import de.challenge.Challenge;
+import de.challenge.ChallengeCategory;
 import de.challenge.ChallengePlugin;
 import org.bukkit.Location;
 import org.bukkit.Material;
@@ -34,6 +35,9 @@ public class SnakeChallenge extends Challenge {
 
     @Override
     public String getDescription() { return "A trail follows you - don't touch it!"; }
+
+    @Override
+    public ChallengeCategory getCategory() { return ChallengeCategory.FLOOR; }
 
     @Override
     protected void onEnable() {
