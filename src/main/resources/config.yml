@@ -84,6 +84,10 @@ no-crafting:
 achievement-damage:
   damage-amount: 1.0
 
+chunk-mob:
+  mob-glow: true
+  grace-period-ticks: 60
+
 random-potion-on-damage:
   min-duration-seconds: 5
   max-duration-seconds: 30

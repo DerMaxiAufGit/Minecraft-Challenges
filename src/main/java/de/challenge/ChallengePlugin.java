@@ -92,6 +92,7 @@ public class ChallengePlugin extends JavaPlugin implements Listener {
         challengeManager.registerChallenge(new OneDurabilityChallenge(this));
         challengeManager.registerChallenge(new DoubleSpawnChallenge(this));
         challengeManager.registerChallenge(new CoronaChallenge(this));
+        challengeManager.registerChallenge(new ChunkMobChallenge(this));
 
         // Randomizers
         challengeManager.registerChallenge(new BlockRandomizerChallenge(this));
