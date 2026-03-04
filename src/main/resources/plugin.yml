@@ -1,0 +1,15 @@
+name: ChallengePlugin
+version: 1.0.0
+main: de.challenge.ChallengePlugin
+api-version: "1.21"
+commands:
+  challenge:
+    description: Open the challenge GUI
+    aliases: [c, challenges]
+  timer:
+    description: Manage the challenge timer
+  settings:
+    description: Alias for /challenge
+    aliases: [settings]
+  reset:
+    description: Reset the challenge world

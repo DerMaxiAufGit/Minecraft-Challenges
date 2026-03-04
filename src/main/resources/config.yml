@@ -1,0 +1,90 @@
+# ChallengePlugin Configuration
+
+# Game settings
+death-ends-challenge: true
+respawn-on-loss: true
+allow-multiple-challenges: true
+
+# Timer
+timer-direction: up
+timer-start-value: "00:00:00"
+
+# Challenge defaults
+force-block:
+  interval-seconds: 180
+  time-limit-seconds: 30
+  punishment: damage
+
+force-mob:
+  interval-seconds: 300
+  time-limit-seconds: 60
+  punishment: damage
+
+force-item:
+  interval-seconds: 240
+  time-limit-seconds: 45
+  punishment: damage
+
+force-biome:
+  interval-seconds: 300
+  time-limit-seconds: 120
+  punishment: damage
+
+force-height:
+  interval-seconds: 180
+  time-limit-seconds: 30
+  punishment: damage
+
+traffic-light:
+  green-seconds: 20
+  yellow-seconds: 5
+  red-seconds: 10
+
+floor-is-lava:
+  magma-delay-ticks: 30
+  lava-delay-ticks: 60
+  restore-blocks: true
+
+ice-floor:
+  melt-delay-ticks: 100
+
+random-mlg:
+  min-interval-seconds: 600
+  max-interval-seconds: 900
+  height: 40
+  warning-seconds: 10
+
+reversed-damage:
+  reflect-chance: 0.5
+
+corona:
+  distance-blocks: 2
+  check-interval-ticks: 40
+
+snake:
+  max-trail-length: 20
+  block: LIME_CONCRETE
+
+always-running:
+  max-idle-seconds: 3
+
+anvil-rain:
+  interval-ticks: 200
+  height: 20
+
+one-durability:
+  enabled: true
+
+double-spawn:
+  enabled: true
+
+no-crafting:
+  allow-eye-of-ender: true
+
+achievement-damage:
+  damage-amount: 1.0
+
+random-potion-on-damage:
+  min-duration-seconds: 5
+  max-duration-seconds: 30
+  max-amplifier: 2
