@@ -155,6 +155,7 @@ public class ChunkMobChallenge extends Challenge {
         ChunkState existing = activeChunks.get(targetChunk);
         if (existing != null) {
             lockPlayerIntoChunk(player, targetChunk, existing);
+            teleportOtherPlayersToChunk(player, targetChunk, existing);
         } else {
             spawnChunkMob(player, targetChunk);
         }
@@ -269,9 +270,15 @@ public class ChunkMobChallenge extends Challenge {
                 .append(Component.text(mobName, NamedTextColor.RED))
                 .append(Component.text(" has spawned! Kill it to leave this chunk.", NamedTextColor.YELLOW)));
         player.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_SUMMON, 0.5f, 1.5f);
+
+        teleportOtherPlayersToChunk(player, chunkKey, state);
     }
 
     private void lockPlayerIntoChunk(Player player, ChunkKey chunkKey, ChunkState state) {
+        lockPlayerIntoChunk(player, chunkKey, state, true);
+    }
+
+    private void lockPlayerIntoChunk(Player player, ChunkKey chunkKey, ChunkState state, boolean notify) {
         UUID playerId = player.getUniqueId();
         state.lockedPlayers.add(playerId);
         playerChunkMap.put(playerId, chunkKey);
@@ -287,12 +294,56 @@ public class ChunkMobChallenge extends Challenge {
         border.setWarningDistance(0);
         player.setWorldBorder(border);
 
-        if (state.lockedPlayers.size() > 1) {
+        if (notify && state.lockedPlayers.size() > 1) {
             String mobName = formatMobName(state.mob.getType().name());
             player.sendMessage(Component.text("This chunk already has a ", NamedTextColor.YELLOW)
                     .append(Component.text(mobName, NamedTextColor.RED))
                     .append(Component.text("! Help kill it to leave.", NamedTextColor.YELLOW)));
             player.playSound(player.getLocation(), Sound.ENTITY_EVOKER_PREPARE_SUMMON, 0.5f, 1.5f);
+        }
+    }
+
+    private void teleportOtherPlayersToChunk(Player triggeringPlayer, ChunkKey chunkKey, ChunkState state) {
+        World world = Bukkit.getWorld(chunkKey.worldId);
+        if (world == null) return;
+
+        int baseX = chunkKey.chunkX << 4;
+        int baseZ = chunkKey.chunkZ << 4;
+
+        Location[] borderSpots = {
+            new Location(world, baseX + 0.5, 0, baseZ + 8.5),
+            new Location(world, baseX + 15.5, 0, baseZ + 8.5),
+            new Location(world, baseX + 8.5, 0, baseZ + 0.5),
+            new Location(world, baseX + 8.5, 0, baseZ + 15.5),
+        };
+
+        String mobName = formatMobName(state.mob.getType().name());
+        int spotIndex = 0;
+
+        for (Player other : Bukkit.getOnlinePlayers()) {
+            if (other.getUniqueId().equals(triggeringPlayer.getUniqueId())) continue;
+            if (!other.getWorld().getUID().equals(chunkKey.worldId)) continue;
+            if (graceActive.contains(other.getUniqueId())) continue;
+
+            ChunkKey currentChunk = playerChunkMap.get(other.getUniqueId());
+            if (chunkKey.equals(currentChunk)) continue;
+
+            removePlayerFromChunk(other.getUniqueId());
+
+            // Lock before teleporting to prevent PlayerMoveEvent re-triggering
+            lockPlayerIntoChunk(other, chunkKey, state, false);
+
+            Location spot = borderSpots[spotIndex % borderSpots.length].clone();
+            int safeY = world.getHighestBlockYAt(spot.getBlockX(), spot.getBlockZ()) + 1;
+            spot.setY(safeY);
+            other.teleport(spot);
+
+            other.sendMessage(Component.text("You've been pulled into a chunk! Kill the ", NamedTextColor.YELLOW)
+                    .append(Component.text(mobName, NamedTextColor.RED))
+                    .append(Component.text(" to escape.", NamedTextColor.YELLOW)));
+            other.playSound(other.getLocation(), Sound.ENTITY_EVOKER_PREPARE_SUMMON, 0.5f, 1.5f);
+
+            spotIndex++;
         }
     }
 
