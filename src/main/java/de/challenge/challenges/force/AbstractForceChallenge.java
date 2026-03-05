@@ -44,6 +44,13 @@ public abstract class AbstractForceChallenge extends Challenge {
     }
 
     private void startNewObjective() {
+        // Cancel any previous countdown still running
+        if (countdownTask != null) {
+            countdownTask.cancel();
+            countdownTask = null;
+        }
+        objectiveActive = false;
+
         currentObjective = pickObjective();
         if (currentObjective == null) return;
 
@@ -103,7 +110,7 @@ public abstract class AbstractForceChallenge extends Challenge {
             switch (punishment) {
                 case "kill" -> player.damage(player.getHealth() + 1);
                 case "damage" -> player.damage(4.0);
-                case "end" -> player.damage(player.getHealth() + 1);
+                case "end" -> plugin.getChallengeManager().triggerLoss(player);
             }
         }
     }

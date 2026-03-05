@@ -26,10 +26,11 @@ public class CategoryMenuGUI implements Listener {
     private static final int SIZE = 54; // 6 rows
     private static final int CONTROL_ROW_START = 45;
 
-    // Category icons in rows 2 and 4 (centered 5 per row)
+    // Category icons in 3 rows (4+4+3)
     private static final int[] CATEGORY_SLOTS = {
-            10, 11, 12, 13, 14,  // row 2: slots 10-14
-            28, 29, 30, 31, 32   // row 4: slots 28-32
+            10, 11, 12, 13,      // row 2
+            19, 20, 21, 22,      // row 3
+            28, 29, 30           // row 4
     };
 
     private final ChallengePlugin plugin;
@@ -86,6 +87,7 @@ public class CategoryMenuGUI implements Listener {
         // Start/Stop button
         fillControlRow();
 
+        HandlerList.unregisterAll(this); // safe no-op if not registered yet
         Bukkit.getPluginManager().registerEvents(this, plugin);
         player.openInventory(inventory);
     }

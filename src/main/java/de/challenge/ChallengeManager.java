@@ -8,7 +8,6 @@ import org.bukkit.Bukkit;
 import org.bukkit.Sound;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.configuration.file.YamlConfiguration;
-import org.bukkit.entity.EnderDragon;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.EventPriority;
@@ -103,8 +102,19 @@ public class ChallengeManager implements Listener {
     @EventHandler(priority = EventPriority.HIGH)
     public void onEntityDeath(EntityDeathEvent event) {
         if (!challengeRunning || challengeEnded) return;
-        if (!(event.getEntity() instanceof EnderDragon)) return;
+        String goal = plugin.getSettingsManager().getString("goal-selection.goal", "ENDER_DRAGON");
+        if (goal == null || !event.getEntity().getType().name().equals(goal)) return;
         onChallengeWon();
+    }
+
+    public void triggerWin() {
+        if (!challengeRunning || challengeEnded) return;
+        onChallengeWon();
+    }
+
+    public void triggerLoss(Player player) {
+        if (!challengeRunning || challengeEnded) return;
+        onChallengeLost(player);
     }
 
     @EventHandler

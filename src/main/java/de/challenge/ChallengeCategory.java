@@ -23,7 +23,9 @@ public enum ChallengeCategory {
     ENVIRONMENTAL("environmental", "Environmental", Material.LIGHTNING_ROD,
             "Challenges that change the world around you"),
     PROJECTS("projects", "Projects", Material.NETHER_STAR,
-            "Long-term collection projects");
+            "Long-term collection projects"),
+    MODIFIERS("modifiers", "Modifiers", Material.COMPARATOR,
+            "Stackable settings that modify the game");
 
     private final String id;
     private final String displayName;
