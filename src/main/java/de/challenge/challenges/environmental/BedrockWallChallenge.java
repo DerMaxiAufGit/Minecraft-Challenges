@@ -11,6 +11,11 @@ import org.bukkit.entity.Player;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
+
+import java.io.File;
+import java.io.IOException;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
@@ -38,6 +43,13 @@ public class BedrockWallChallenge extends Challenge {
         int speed = plugin.getSettingsManager().getInt("bedrock-wall.speed", 60);
         direction = plugin.getSettingsManager().getString("bedrock-wall.direction", "north");
         if (direction == null) direction = "north";
+
+        if (loadState()) {
+            lastBuiltWallPosition = wallPosition;
+            builtColumns.clear();
+            task = Bukkit.getScheduler().runTaskTimer(plugin, this::advanceWall, 0L, speed);
+            return;
+        }
 
         Player firstPlayer = Bukkit.getOnlinePlayers().stream().findFirst().orElse(null);
         if (firstPlayer == null) {
@@ -104,7 +116,35 @@ public class BedrockWallChallenge extends Challenge {
     @Override
     protected void onDisable() {
         if (task != null) { task.cancel(); task = null; }
+        if (preservingState) {
+            saveState();
+        } else {
+            File file = new File(plugin.getDataFolder(), "bedrock_wall_state.yml");
+            if (file.exists()) file.delete();
+        }
         builtColumns.clear();
+    }
+
+    private void saveState() {
+        File file = new File(plugin.getDataFolder(), "bedrock_wall_state.yml");
+        FileConfiguration config = new YamlConfiguration();
+        config.set("wallPosition", wallPosition);
+        config.set("direction", direction);
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to save bedrock wall state: " + e.getMessage());
+        }
+    }
+
+    private boolean loadState() {
+        File file = new File(plugin.getDataFolder(), "bedrock_wall_state.yml");
+        if (!file.exists()) return false;
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        wallPosition = config.getInt("wallPosition");
+        String savedDirection = config.getString("direction");
+        if (savedDirection != null) direction = savedDirection;
+        return true;
     }
 
     @Override

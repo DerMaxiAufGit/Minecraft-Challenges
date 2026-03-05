@@ -10,9 +10,13 @@ import org.bukkit.block.Block;
 import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerMoveEvent;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 import org.bukkit.scheduler.BukkitTask;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashSet;
 import java.util.List;
@@ -44,6 +48,11 @@ public class ChunkBlockRandomizerChallenge extends Challenge {
     @Override public ItemStack getIcon() { return new ItemStack(Material.COMMAND_BLOCK); }
     @Override public String getDescription() { return "Entering a chunk replaces all blocks with one random type"; }
     @Override public ChallengeCategory getCategory() { return ChallengeCategory.ENVIRONMENTAL; }
+
+    @Override
+    protected void onEnable() {
+        loadState();
+    }
 
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
@@ -100,10 +109,35 @@ public class ChunkBlockRandomizerChallenge extends Challenge {
 
     @Override
     protected void onDisable() {
+        if (preservingState) {
+            saveState();
+        } else {
+            File file = new File(plugin.getDataFolder(), "chunk_randomizer_state.yml");
+            if (file.exists()) file.delete();
+        }
         for (BukkitTask task : pendingTasks) {
             task.cancel();
         }
         pendingTasks.clear();
         processedChunks.clear();
+    }
+
+    private void saveState() {
+        File file = new File(plugin.getDataFolder(), "chunk_randomizer_state.yml");
+        FileConfiguration config = new YamlConfiguration();
+        config.set("processedChunks", new ArrayList<>(processedChunks));
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to save chunk randomizer state: " + e.getMessage());
+        }
+    }
+
+    private void loadState() {
+        File file = new File(plugin.getDataFolder(), "chunk_randomizer_state.yml");
+        if (!file.exists()) return;
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        List<Long> saved = config.getLongList("processedChunks");
+        processedChunks.addAll(saved);
     }
 }

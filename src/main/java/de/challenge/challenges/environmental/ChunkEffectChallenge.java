@@ -10,9 +10,13 @@ import org.bukkit.entity.Player;
 import org.bukkit.event.EventHandler;
 import org.bukkit.event.player.PlayerMoveEvent;
 import org.bukkit.inventory.ItemStack;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.potion.PotionEffect;
 import org.bukkit.potion.PotionEffectType;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
@@ -41,6 +45,11 @@ public class ChunkEffectChallenge extends Challenge {
     @Override public String getDescription() { return "Each chunk gives a random potion effect"; }
     @Override public ChallengeCategory getCategory() { return ChallengeCategory.ENVIRONMENTAL; }
 
+    @Override
+    protected void onEnable() {
+        loadState();
+    }
+
     @EventHandler
     public void onMove(PlayerMoveEvent event) {
         if (!active) return;
@@ -64,7 +73,11 @@ public class ChunkEffectChallenge extends Challenge {
 
     @Override
     protected void onDisable() {
-        if (!preservingState) {
+        if (preservingState) {
+            saveState();
+        } else {
+            File file = new File(plugin.getDataFolder(), "chunk_effects_state.yml");
+            if (file.exists()) file.delete();
             for (Player player : Bukkit.getOnlinePlayers()) {
                 for (PotionEffectType effect : EFFECTS) {
                     player.removePotionEffect(effect);
@@ -72,6 +85,41 @@ public class ChunkEffectChallenge extends Challenge {
             }
         }
         chunkEffects.clear();
+    }
+
+    private void saveState() {
+        File file = new File(plugin.getDataFolder(), "chunk_effects_state.yml");
+        FileConfiguration config = new YamlConfiguration();
+        for (Map.Entry<Long, PotionEffectType> entry : chunkEffects.entrySet()) {
+            config.set(entry.getKey().toString(), entry.getValue().getKey().getKey());
+        }
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to save chunk effects state: " + e.getMessage());
+        }
+    }
+
+    private void loadState() {
+        File file = new File(plugin.getDataFolder(), "chunk_effects_state.yml");
+        if (!file.exists()) return;
+        FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+        for (String key : config.getKeys(false)) {
+            try {
+                long chunkKey = Long.parseLong(key);
+                String effectName = config.getString(key);
+                if (effectName != null) {
+                    for (PotionEffectType e : EFFECTS) {
+                        if (e.getKey().getKey().equals(effectName)) {
+                            chunkEffects.put(chunkKey, e);
+                            break;
+                        }
+                    }
+                }
+            } catch (NumberFormatException e) {
+                plugin.getLogger().warning("Invalid chunk key in chunk_effects_state.yml: " + key);
+            }
+        }
     }
 
     @Override

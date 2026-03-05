@@ -9,8 +9,12 @@ import net.kyori.adventure.text.Component;
 import net.kyori.adventure.text.format.NamedTextColor;
 import org.bukkit.Bukkit;
 import org.bukkit.Material;
+import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.configuration.file.YamlConfiguration;
 import org.bukkit.inventory.ItemStack;
 
+import java.io.File;
+import java.io.IOException;
 import java.util.List;
 
 public class RespawnModifier extends Challenge implements DeathOverride {
@@ -29,7 +33,35 @@ public class RespawnModifier extends Challenge implements DeathOverride {
 
     @Override
     protected void onEnable() {
-        teamLivesRemaining = plugin.getSettingsManager().getInt("respawn.team-lives", 3);
+        File file = new File(plugin.getDataFolder(), "respawn_state.yml");
+        if (file.exists()) {
+            FileConfiguration config = YamlConfiguration.loadConfiguration(file);
+            teamLivesRemaining = config.getInt("teamLivesRemaining",
+                    plugin.getSettingsManager().getInt("respawn.team-lives", 3));
+        } else {
+            teamLivesRemaining = plugin.getSettingsManager().getInt("respawn.team-lives", 3);
+        }
+    }
+
+    @Override
+    protected void onDisable() {
+        if (preservingState) {
+            saveState();
+        } else {
+            File file = new File(plugin.getDataFolder(), "respawn_state.yml");
+            if (file.exists()) file.delete();
+        }
+    }
+
+    private void saveState() {
+        File file = new File(plugin.getDataFolder(), "respawn_state.yml");
+        FileConfiguration config = new YamlConfiguration();
+        config.set("teamLivesRemaining", teamLivesRemaining);
+        try {
+            config.save(file);
+        } catch (IOException e) {
+            plugin.getLogger().warning("Failed to save respawn state: " + e.getMessage());
+        }
     }
 
     @Override
@@ -41,6 +73,7 @@ public class RespawnModifier extends Challenge implements DeathOverride {
             case "team-lives":
                 if (teamLivesRemaining > 0) {
                     teamLivesRemaining--;
+                    saveState();
                     Bukkit.broadcast(Component.text("Team lives remaining: " + teamLivesRemaining, NamedTextColor.YELLOW));
                     return true;
                 }

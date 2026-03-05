@@ -34,24 +34,18 @@ public class ResetCommand implements CommandExecutor {
         }
 
         if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
+            Long timestamp = confirmations.remove(player.getUniqueId());
+            if (timestamp == null || System.currentTimeMillis() - timestamp > CONFIRM_TIMEOUT_MS) {
+                player.sendMessage(Component.text("No pending reset. Type /reset first.", NamedTextColor.RED));
+                return true;
+            }
             performReset(player);
             return true;
         }
 
-        if (args.length == 0) {
-            confirmations.put(player.getUniqueId(), System.currentTimeMillis());
-            player.sendMessage(Component.text("Are you sure you want to reset the world?", NamedTextColor.RED));
-            player.sendMessage(Component.text("Type /reset confirm within 15 seconds to confirm.", NamedTextColor.YELLOW));
-            return true;
-        }
-
-        Long timestamp = confirmations.remove(player.getUniqueId());
-        if (timestamp == null || System.currentTimeMillis() - timestamp > CONFIRM_TIMEOUT_MS) {
-            player.sendMessage(Component.text("Confirmation expired. Type /reset first.", NamedTextColor.RED));
-            return true;
-        }
-
-        performReset(player);
+        confirmations.put(player.getUniqueId(), System.currentTimeMillis());
+        player.sendMessage(Component.text("Are you sure you want to reset the world?", NamedTextColor.RED));
+        player.sendMessage(Component.text("Type /reset confirm within 15 seconds to confirm.", NamedTextColor.YELLOW));
         return true;
     }
 
@@ -101,7 +95,10 @@ public class ResetCommand implements CommandExecutor {
         String[] files = {
                 "randomizer_blocks.yml", "randomizer_crafting.yml",
                 "randomizer_mobs.yml", "randomizer_biome_effects.yml",
-                "diet_state.yml", "challenge-settings.yml"
+                "diet_state.yml", "challenge-settings.yml",
+                "bedrock_wall_state.yml", "chunk_randomizer_state.yml",
+                "chunk_effects_state.yml", "respawn_state.yml",
+                "only_downward_state.yml", "only_upward_state.yml"
         };
         for (String name : files) {
             File f = new File(plugin.getDataFolder(), name);
