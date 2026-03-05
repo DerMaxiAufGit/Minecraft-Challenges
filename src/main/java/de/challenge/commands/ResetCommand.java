@@ -34,11 +34,7 @@ public class ResetCommand implements CommandExecutor {
         }
 
         if (args.length > 0 && args[0].equalsIgnoreCase("confirm")) {
-            Long timestamp = confirmations.remove(player.getUniqueId());
-            if (timestamp == null || System.currentTimeMillis() - timestamp > CONFIRM_TIMEOUT_MS) {
-                player.sendMessage(Component.text("No pending reset. Type /reset first.", NamedTextColor.RED));
-                return true;
-            }
+            confirmations.remove(player.getUniqueId());
             performReset(player);
             return true;
         }
@@ -92,10 +88,12 @@ public class ResetCommand implements CommandExecutor {
     }
 
     private void deleteRandomizerFiles() {
+        // Runtime state files to delete on reset.
+        // NOTE: challenge-settings.yml is intentionally preserved (user settings persist across resets).
         String[] files = {
                 "randomizer_blocks.yml", "randomizer_crafting.yml",
                 "randomizer_mobs.yml", "randomizer_biome_effects.yml",
-                "diet_state.yml", "challenge-settings.yml",
+                "diet_state.yml",
                 "bedrock_wall_state.yml", "chunk_randomizer_state.yml",
                 "chunk_effects_state.yml", "respawn_state.yml",
                 "only_downward_state.yml", "only_upward_state.yml"

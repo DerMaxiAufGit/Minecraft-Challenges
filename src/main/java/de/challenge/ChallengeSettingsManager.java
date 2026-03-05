@@ -33,13 +33,6 @@ public class ChallengeSettingsManager {
         }
     }
 
-    public void deleteAll() {
-        settings = new YamlConfiguration();
-        if (settingsFile.exists()) {
-            settingsFile.delete();
-        }
-    }
-
     public int getInt(String path, int defaultValue) {
         if (settings.contains(path)) return settings.getInt(path);
         return plugin.getConfig().getInt(path, defaultValue);
